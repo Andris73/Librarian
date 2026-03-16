@@ -444,33 +444,36 @@ async def test_jackett():
     settings = get_settings()
     logger = logging.getLogger("librarian")
     logger.info(f"Testing Jackett connection to: {settings.jackett_url}")
-    logger.info(f"Jackett API key present: {bool(settings.jackett_api_key)}")
-    logger.info(
-        f"Jackett API key value: {settings.jackett_api_key[:10] if settings.jackett_api_key else 'empty'}..."
-    )
 
     if not settings.jackett_api_key:
         return {"status": "error", "message": "No API key configured"}
 
     try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(
-                f"{settings.jackett_url}/api/v2.0/indexers",
-                params={"apikey": settings.jackett_api_key},
+                f"{settings.jackett_url}/api/v2.0/indexers/all/results",
+                params={"apikey": settings.jackett_api_key, "q": "test", "cat": "3030"},
+                headers={"Accept": "application/json", "User-Agent": "Librarian/1.0"},
             )
-            logger.info(f"Jackett response status: {response.status_code}")
+            logger.info(f"Jackett search response status: {response.status_code}")
+
             if response.status_code == 200:
-                return {"status": "success", "message": "Connected to Jackett"}
-            elif response.status_code == 302:
+                data = response.json()
+                results = data.get("Results", [])
+                return {
+                    "status": "success",
+                    "message": f"Connected to Jackett (search works, {len(results)} results for 'test')",
+                }
+            elif response.status_code == 302 or "Login" in response.text:
                 return {
                     "status": "error",
-                    "message": "Invalid API key - redirected to login",
+                    "message": "Invalid API key or admin password required. Check Jackett settings.",
                 }
             else:
                 return {
                     "status": "error",
                     "message": f"HTTP {response.status_code}",
-                    "detail": response.text[:200],
+                    "detail": response.text[:300],
                 }
     except Exception as e:
         logger.error(f"Jackett connection error: {e}")

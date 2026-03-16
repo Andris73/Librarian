@@ -8,16 +8,19 @@ class JackettClient:
         self.settings = get_settings()
         self.base_url = self.settings.jackett_url
         self.api_key = self.settings.jackett_api_key
-        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=60.0)
-
-    def _headers(self) -> dict:
-        return {"X-Api-Key": self.api_key}
+        self.client = httpx.AsyncClient(
+            base_url=self.base_url,
+            timeout=60.0,
+            headers={"Accept": "application/json", "User-Agent": "Librarian/1.0"},
+        )
 
     async def close(self):
         await self.client.aclose()
 
     async def get_indexers(self) -> dict:
-        response = await self.client.get("/api/v2.0/indexers", headers=self._headers())
+        response = await self.client.get(
+            "/api/v2.0/indexers", params={"apikey": self.api_key}
+        )
         response.raise_for_status()
         return response.json()
 
@@ -25,6 +28,7 @@ class JackettClient:
         self, query: str, category: int = 3030, indexer: Optional[str] = None
     ) -> dict:
         params = {
+            "apikey": self.api_key,
             "q": query,
             "cat": str(category),
         }
@@ -32,7 +36,7 @@ class JackettClient:
             params["indexer"] = indexer
 
         response = await self.client.get(
-            "/api/v2.0/indexers/all/results", params=params, headers=self._headers()
+            "/api/v2.0/indexers/all/results", params=params
         )
         response.raise_for_status()
         return response.json()
@@ -42,15 +46,15 @@ class JackettClient:
     ) -> dict:
         response = await self.client.get(
             f"/api/v2.0/indexers/{indexer}/results/torznab",
-            params={"q": query, "cat": str(category)},
-            headers=self._headers(),
+            params={"apikey": self.api_key, "q": query, "cat": str(category)},
         )
         response.raise_for_status()
         return response.json()
 
     async def get_download_url(self, link: str) -> str:
         if "torznab" in link or "jackett" in link.lower():
-            response = await self.client.get(link, headers=self._headers())
+            params = {"apikey": self.api_key}
+            response = await self.client.get(link, params=params)
             response.raise_for_status()
             return response.text
         return link
