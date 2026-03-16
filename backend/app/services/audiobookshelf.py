@@ -26,7 +26,7 @@ class AudiobookshelfClient:
         self, library_id: str, limit: int = 100, offset: int = 0
     ) -> dict:
         response = await self.client.get(
-            f"/api/libraries/{library_id}/books",
+            f"/api/libraries/{library_id}/items",
             params={"limit": limit, "offset": offset},
         )
         response.raise_for_status()
