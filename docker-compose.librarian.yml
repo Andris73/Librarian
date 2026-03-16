@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   librarian:
     build:
@@ -7,26 +5,19 @@ services:
       dockerfile: docker/Dockerfile
     image: librarian:latest
     container_name: librarian
-    ports:
-      - "3000:3000"
     volumes:
       - ./config:/config
     environment:
       - PUID=1000
       - PGID=1001
       - TZ=Europe/London
-      - LIBRARIAN_ABS_URL=http://audiobookshelf:80
+      - LIBRARIAN_ABS_URL=http://localhost:13378
       - LIBRARIAN_ABS_API_TOKEN=${ABS_API_TOKEN}
-      - LIBRARIAN_JACKETT_URL=http://jackett:9117
+      - LIBRARIAN_JACKETT_URL=http://localhost:9117
       - LIBRARIAN_JACKETT_API_KEY=${JACKETT_API_KEY}
-      - LIBRARIAN_TRANSMISSION_URL=http://transmission:9091
+      - LIBRARIAN_TRANSMISSION_URL=http://localhost:9091
       - LIBRARIAN_TRANSMISSION_USERNAME=admin
       - LIBRARIAN_TRANSMISSION_PASSWORD=admin
       - LIBRARIAN_DOWNLOAD_PATH=/data/audiobooks
-    networks:
-      - media
+    network_mode: host
     restart: unless-stopped
-
-networks:
-  media:
-    external: true
