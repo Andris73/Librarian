@@ -27,5 +27,6 @@ services:
       - LIBRARIAN_TRANSMISSION_USERNAME=admin
       - LIBRARIAN_TRANSMISSION_PASSWORD=admin
       - LIBRARIAN_DOWNLOAD_PATH=/data/audiobooks
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
-    network_mode: host
