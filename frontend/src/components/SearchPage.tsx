@@ -11,6 +11,9 @@ interface SearchResult {
   asin?: string;
   url?: string;
   source: string;
+  size?: string;
+  seeders?: number;
+  leechers?: number;
 }
 
 export default function SearchPage() {
@@ -29,16 +32,29 @@ export default function SearchPage() {
     try {
       const res = await fetch(`/api/search/jackett?query=${encodeURIComponent(query)}`);
       const data = await res.json();
+      console.log("Jackett search response:", data);
       
-      const searchResults: SearchResult[] = (data.Results || []).map((item: any) => ({
-        title: item.Title || "Unknown",
-        author: item.Author || "Unknown Author",
-        description: item.Description,
-        coverUrl: item.cover_url || item.poster,
-        asin: item.asin,
-        url: item.Link || item.link,
-        source: item.indexer || "Jackett",
-      }));
+      const searchResults: SearchResult[] = (data.Results || []).map((item: any) => {
+        const title = item.Title || "Unknown";
+        let author = "Unknown Author";
+        
+        const parts = title.split(/[-–—]/);
+        if (parts.length > 1) {
+          author = parts[0].trim();
+        }
+        
+        return {
+          title: title,
+          author: author,
+          description: item.CategoryDesc || item.Size,
+          coverUrl: item.poster || item.image,
+          url: item.Link || item.link,
+          source: item.Indexer || "Jackett",
+          size: item.Size,
+          seeders: item.Seeders,
+          leechers: item.Leechers,
+        };
+      });
       
       setResults(searchResults);
     } catch (error) {
@@ -129,7 +145,13 @@ export default function SearchPage() {
               <div className="p-4">
                 <h3 className="font-semibold truncate">{result.title}</h3>
                 <p className="text-sm text-gray-400 truncate">{result.author}</p>
-                <p className="text-xs text-gray-500 mt-2">{result.source}</p>
+                <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                  <span>{result.source}</span>
+                  {result.size && <span>{result.size}</span>}
+                  {result.seeders !== undefined && (
+                    <span className="text-green-400">{result.seeders} ↓</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

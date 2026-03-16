@@ -165,9 +165,11 @@ async def get_item_cover(item_id: str):
                 follow_redirects=True,
             )
             if response.status_code == 200:
+                content = await response.aread()
+                content_type = response.headers.get("content-type", "image/jpeg")
                 return StreamingResponse(
-                    response.content,
-                    media_type="image/jpeg",
+                    iter([content]),
+                    media_type=content_type,
                     headers={"Cache-Control": "public, max-age=3600"},
                 )
             elif response.status_code == 404:
@@ -331,22 +333,30 @@ async def stop_download(torrent_id: int):
 
 @router.get("/api/config")
 async def get_config():
-    """Get current configuration (non-sensitive)"""
+    """Get current configuration"""
     from ..config import get_settings
 
     settings = get_settings()
     return {
         "abs_url": settings.abs_url,
+        "abs_api_token": settings.abs_api_token,
         "jackett_url": settings.jackett_url,
+        "jackett_api_key": settings.jackett_api_key,
         "transmission_url": settings.transmission_url,
+        "transmission_username": settings.transmission_username,
+        "transmission_password": settings.transmission_password,
         "selected_library_id": settings.selected_library_id,
     }
 
 
 class ConfigUpdate(BaseModel):
     abs_url: Optional[str] = None
+    abs_api_token: Optional[str] = None
     jackett_url: Optional[str] = None
+    jackett_api_key: Optional[str] = None
     transmission_url: Optional[str] = None
+    transmission_username: Optional[str] = None
+    transmission_password: Optional[str] = None
     selected_library_id: Optional[str] = None
 
 
@@ -356,21 +366,33 @@ async def update_config(config: ConfigUpdate):
     import os
     from ..config import get_settings
 
-    if config.abs_url:
+    if config.abs_url is not None:
         os.environ["LIBRARIAN_ABS_URL"] = config.abs_url
-    if config.jackett_url:
+    if config.abs_api_token is not None:
+        os.environ["LIBRARIAN_ABS_API_TOKEN"] = config.abs_api_token
+    if config.jackett_url is not None:
         os.environ["LIBRARIAN_JACKETT_URL"] = config.jackett_url
-    if config.transmission_url:
+    if config.jackett_api_key is not None:
+        os.environ["LIBRARIAN_JACKETT_API_KEY"] = config.jackett_api_key
+    if config.transmission_url is not None:
         os.environ["LIBRARIAN_TRANSMISSION_URL"] = config.transmission_url
-    if config.selected_library_id:
+    if config.transmission_username is not None:
+        os.environ["LIBRARIAN_TRANSMISSION_USERNAME"] = config.transmission_username
+    if config.transmission_password is not None:
+        os.environ["LIBRARIAN_TRANSMISSION_PASSWORD"] = config.transmission_password
+    if config.selected_library_id is not None:
         os.environ["LIBRARIAN_SELECTED_LIBRARY_ID"] = config.selected_library_id
 
     get_settings.cache_clear()
     settings = get_settings()
     return {
         "abs_url": settings.abs_url,
+        "abs_api_token": settings.abs_api_token,
         "jackett_url": settings.jackett_url,
+        "jackett_api_key": settings.jackett_api_key,
         "transmission_url": settings.transmission_url,
+        "transmission_username": settings.transmission_username,
+        "transmission_password": settings.transmission_password,
         "selected_library_id": settings.selected_library_id,
     }
 

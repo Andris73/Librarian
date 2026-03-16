@@ -5,8 +5,12 @@ import { Save, Server, Download, Search, Wifi, WifiOff } from "lucide-react";
 
 interface Config {
   abs_url: string;
+  abs_api_token: string;
   jackett_url: string;
+  jackett_api_key: string;
   transmission_url: string;
+  transmission_username: string;
+  transmission_password: string;
 }
 
 interface TestResult {
@@ -17,8 +21,12 @@ interface TestResult {
 export default function SettingsPage() {
   const [config, setConfig] = useState<Config>({
     abs_url: "",
+    abs_api_token: "",
     jackett_url: "",
+    jackett_api_key: "",
     transmission_url: "",
+    transmission_username: "admin",
+    transmission_password: "admin",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,6 +69,16 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const getStatusColor = (result: TestResult | null) => {
+    if (!result) return "bg-gray-600";
+    return result.status === "success" ? "bg-green-500" : result.status === "warning" ? "bg-blue-500" : "bg-red-500";
+  };
+
+  const getStatusText = (result: TestResult | null) => {
+    if (!result) return "Not tested";
+    return result.status === "success" ? "Connected" : result.status === "warning" ? "Warning" : "Error";
   };
 
   const testAbs = async () => {
@@ -122,21 +140,17 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 mb-4">
             <Server className="w-5 h-5 text-primary-400" />
             <h3 className="text-lg font-semibold">Audiobookshelf</h3>
+            <span className={`ml-auto w-3 h-3 rounded-full ${getStatusColor(absResult)}`} title={getStatusText(absResult)}></span>
             <button
               onClick={testAbs}
               disabled={testingAbs}
-              className="ml-auto flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
             >
               {testingAbs ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : absResult?.status === "success" ? (
-                <Wifi className="w-4 h-4 text-green-400" />
-              ) : absResult?.status === "error" ? (
-                <WifiOff className="w-4 h-4 text-red-400" />
               ) : (
-                <Wifi className="w-4 h-4" />
+                "Test"
               )}
-              Test
             </button>
           </div>
           {absResult && (
@@ -161,6 +175,8 @@ export default function SettingsPage() {
               <label className="block text-sm text-gray-400 mb-1">API Token</label>
               <input
                 type="password"
+                value={config.abs_api_token}
+                onChange={(e) => setConfig({ ...config, abs_api_token: e.target.value })}
                 placeholder="Enter your Audiobookshelf API token"
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
               />
@@ -175,21 +191,17 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 mb-4">
             <Search className="w-5 h-5 text-primary-400" />
             <h3 className="text-lg font-semibold">Jackett</h3>
+            <span className={`ml-auto w-3 h-3 rounded-full ${getStatusColor(jackettResult)}`} title={getStatusText(jackettResult)}></span>
             <button
               onClick={testJackett}
               disabled={testingJackett}
-              className="ml-auto flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
             >
               {testingJackett ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : jackettResult?.status === "success" ? (
-                <Wifi className="w-4 h-4 text-green-400" />
-              ) : jackettResult?.status === "error" ? (
-                <WifiOff className="w-4 h-4 text-red-400" />
               ) : (
-                <Wifi className="w-4 h-4" />
+                "Test"
               )}
-              Test
             </button>
           </div>
           {jackettResult && (
@@ -214,6 +226,8 @@ export default function SettingsPage() {
               <label className="block text-sm text-gray-400 mb-1">API Key</label>
               <input
                 type="password"
+                value={config.jackett_api_key}
+                onChange={(e) => setConfig({ ...config, jackett_api_key: e.target.value })}
                 placeholder="Enter your Jackett API key"
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
               />
@@ -225,21 +239,17 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 mb-4">
             <Download className="w-5 h-5 text-primary-400" />
             <h3 className="text-lg font-semibold">Transmission</h3>
+            <span className={`ml-auto w-3 h-3 rounded-full ${getStatusColor(transmissionResult)}`} title={getStatusText(transmissionResult)}></span>
             <button
               onClick={testTransmission}
               disabled={testingTransmission}
-              className="ml-auto flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
             >
               {testingTransmission ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : transmissionResult?.status === "success" ? (
-                <Wifi className="w-4 h-4 text-green-400" />
-              ) : transmissionResult?.status === "error" ? (
-                <WifiOff className="w-4 h-4 text-red-400" />
               ) : (
-                <Wifi className="w-4 h-4" />
+                "Test"
               )}
-              Test
             </button>
           </div>
           {transmissionResult && (
@@ -265,6 +275,8 @@ export default function SettingsPage() {
                 <label className="block text-sm text-gray-400 mb-1">Username</label>
                 <input
                   type="text"
+                  value={config.transmission_username}
+                  onChange={(e) => setConfig({ ...config, transmission_username: e.target.value })}
                   placeholder="admin"
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
                 />
@@ -273,6 +285,8 @@ export default function SettingsPage() {
                 <label className="block text-sm text-gray-400 mb-1">Password</label>
                 <input
                   type="password"
+                  value={config.transmission_password}
+                  onChange={(e) => setConfig({ ...config, transmission_password: e.target.value })}
                   placeholder="admin"
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
                 />
