@@ -444,6 +444,10 @@ async def test_jackett():
     settings = get_settings()
     logger = logging.getLogger("librarian")
     logger.info(f"Testing Jackett connection to: {settings.jackett_url}")
+    logger.info(f"Jackett API key present: {bool(settings.jackett_api_key)}")
+    logger.info(
+        f"Jackett API key value: {settings.jackett_api_key[:10] if settings.jackett_api_key else 'empty'}..."
+    )
 
     if not settings.jackett_api_key:
         return {"status": "error", "message": "No API key configured"}
@@ -452,8 +456,9 @@ async def test_jackett():
         async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
             response = await client.get(
                 f"{settings.jackett_url}/api/v2.0/indexers",
-                headers={"X-Api-Key": settings.jackett_api_key},
+                params={"apikey": settings.jackett_api_key},
             )
+            logger.info(f"Jackett response status: {response.status_code}")
             if response.status_code == 200:
                 return {"status": "success", "message": "Connected to Jackett"}
             elif response.status_code == 302:
