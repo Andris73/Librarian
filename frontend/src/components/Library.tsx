@@ -6,8 +6,9 @@ import { Play, MoreVertical, Clock, BookOpen } from "lucide-react";
 interface Book {
   id: string;
   title: string;
-  author: string;
-  narrator?: string;
+  authorName?: string;
+  author?: string;
+  narratorName?: string;
   description?: string;
   coverUrl?: string;
   duration?: number;
@@ -41,7 +42,8 @@ export default function Library() {
     try {
       const res = await fetch("/api/libraries");
       const data = await res.json();
-      const libs = data.result || data.library || [];
+      console.log("Libraries response:", data);
+      const libs = data.libraries || data.result || [];
       setLibraries(libs);
       if (libs.length > 0) {
         setSelectedLibrary(libs[0].id);
@@ -57,7 +59,8 @@ export default function Library() {
     try {
       const res = await fetch(`/api/libraries/${libraryId}/books`);
       const data = await res.json();
-      setBooks(data.result || []);
+      console.log("Books response:", data);
+      setBooks(data.result || data.book || []);
     } catch (error) {
       console.error("Failed to fetch books:", error);
     }
@@ -127,7 +130,7 @@ export default function Library() {
               </div>
               <div className="p-4">
                 <h3 className="font-semibold truncate">{book.title}</h3>
-                <p className="text-sm text-gray-400 truncate">{book.author}</p>
+                <p className="text-sm text-gray-400 truncate">{book.authorName || book.author || "Unknown"}</p>
                 <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
