@@ -79,21 +79,26 @@ class DownloadStatus(BaseModel):
 
 
 @router.get("/api/libraries")
-async def get_libraries(abs: AudiobookshelfClient = Depends(AudiobookshelfDeps)):
+async def get_libraries():
     """Get all libraries from audiobookshelf"""
     import logging
 
     logger = logging.getLogger("librarian")
+    from ..services.audiobookshelf import AudiobookshelfClient
+
+    client = AudiobookshelfClient()
     try:
         logger.info(
-            f"ABS URL: {abs.base_url}, Token: {abs.api_token[:10] if abs.api_token else 'empty'}..."
+            f"ABS URL: {client.base_url}, Token: {client.api_token[:10] if client.api_token else 'empty'}..."
         )
-        result = await abs.get_libraries()
+        result = await client.get_libraries()
         logger.info(f"Libraries result: {result}")
         return result
     except Exception as e:
         logger.error(f"Error fetching libraries: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.get("/api/libraries/{library_id}/books")
@@ -101,119 +106,192 @@ async def get_library_books(
     library_id: str,
     limit: int = 100,
     offset: int = 0,
-    abs: AudiobookshelfClient = Depends(AudiobookshelfDeps),
 ):
     """Get books from a specific library"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.audiobookshelf import AudiobookshelfClient
+
+    client = AudiobookshelfClient()
     try:
-        return await abs.get_library_books(library_id, limit, offset)
+        logger.info(f"Fetching books for library: {library_id}")
+        result = await client.get_library_books(library_id, limit, offset)
+        logger.info(
+            f"Books result keys: {result.keys() if isinstance(result, dict) else 'not a dict'}"
+        )
+        return result
     except Exception as e:
+        logger.error(f"Error fetching books: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.get("/api/books/{book_id}")
-async def get_book(
-    book_id: str, abs: AudiobookshelfClient = Depends(AudiobookshelfDeps)
-):
+async def get_book(book_id: str):
     """Get book details"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.audiobookshelf import AudiobookshelfClient
+
+    client = AudiobookshelfClient()
     try:
-        return await abs.get_book(book_id)
+        return await client.get_book(book_id)
     except Exception as e:
+        logger.error(f"Error fetching book: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.get("/api/books/{book_id}/stream/{chapter_id}")
-async def get_stream_url(
-    book_id: str,
-    chapter_id: str,
-    abs: AudiobookshelfClient = Depends(AudiobookshelfDeps),
-):
+async def get_stream_url(book_id: str, chapter_id: str):
     """Get streaming URL for a chapter"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.audiobookshelf import AudiobookshelfClient
+
+    client = AudiobookshelfClient()
     try:
-        url = await abs.get_streaming_url(book_id, chapter_id)
+        url = await client.get_streaming_url(book_id, chapter_id)
         return {"url": url}
     except Exception as e:
+        logger.error(f"Error getting stream URL: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.get("/api/search/jackett")
-async def search_jackett(
-    query: str, category: int = 3030, jackett: JackettClient = Depends(JackettDeps)
-):
+async def search_jackett(query: str, category: int = 3030):
     """Search for audiobooks using Jackett"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.jackett import JackettClient
+
+    client = JackettClient()
     try:
-        return await jackett.search(query, category)
+        return await client.search(query, category)
     except Exception as e:
+        logger.error(f"Error searching Jackett: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.post("/api/download")
-async def add_download(
-    request: DownloadRequest,
-    transmission: TransmissionClient = Depends(TransmissionDeps),
-):
+async def add_download(request: DownloadRequest):
     """Add a new download to Transmission"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.transmission import TransmissionClient
+
+    client = TransmissionClient()
     try:
-        result = await transmission.add_torrent(request.url)
+        result = await client.add_torrent(request.url)
         return result
     except Exception as e:
+        logger.error(f"Error adding download: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.get("/api/downloads")
-async def get_downloads(transmission: TransmissionClient = Depends(TransmissionDeps)):
+async def get_downloads():
     """Get all downloads from Transmission"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.transmission import TransmissionClient
+
+    client = TransmissionClient()
     try:
-        torrents = await transmission.get_torrents()
+        torrents = await client.get_torrents()
         return {"torrents": torrents}
     except Exception as e:
+        logger.error(f"Error getting downloads: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.get("/api/downloads/{torrent_id}")
-async def get_download(
-    torrent_id: int, transmission: TransmissionClient = Depends(TransmissionDeps)
-):
+async def get_download(torrent_id: int):
     """Get a specific download from Transmission"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.transmission import TransmissionClient
+
+    client = TransmissionClient()
     try:
-        torrent = await transmission.get_torrent(torrent_id)
+        torrent = await client.get_torrent(torrent_id)
         return torrent
     except Exception as e:
+        logger.error(f"Error getting download: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.delete("/api/downloads/{torrent_id}")
-async def remove_download(
-    torrent_id: int,
-    delete_data: bool = False,
-    transmission: TransmissionClient = Depends(TransmissionDeps),
-):
+async def remove_download(torrent_id: int, delete_data: bool = False):
     """Remove a download from Transmission"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.transmission import TransmissionClient
+
+    client = TransmissionClient()
     try:
-        return await transmission.remove_torrent([torrent_id], delete_data)
+        return await client.remove_torrent([torrent_id], delete_data)
     except Exception as e:
+        logger.error(f"Error removing download: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.post("/api/downloads/{torrent_id}/start")
-async def start_download(
-    torrent_id: int, transmission: TransmissionClient = Depends(TransmissionDeps)
-):
+async def start_download(torrent_id: int):
     """Start a paused download"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.transmission import TransmissionClient
+
+    client = TransmissionClient()
     try:
-        return await transmission.start_torrent(torrent_id)
+        return await client.start_torrent(torrent_id)
     except Exception as e:
+        logger.error(f"Error starting download: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.post("/api/downloads/{torrent_id}/stop")
-async def stop_download(
-    torrent_id: int, transmission: TransmissionClient = Depends(TransmissionDeps)
-):
+async def stop_download(torrent_id: int):
     """Pause a download"""
+    import logging
+
+    logger = logging.getLogger("librarian")
+    from ..services.transmission import TransmissionClient
+
+    client = TransmissionClient()
     try:
-        return await transmission.stop_torrent(torrent_id)
+        return await client.stop_torrent(torrent_id)
     except Exception as e:
+        logger.error(f"Error stopping download: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.close()
 
 
 @router.get("/api/config")
