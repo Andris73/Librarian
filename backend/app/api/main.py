@@ -81,9 +81,18 @@ class DownloadStatus(BaseModel):
 @router.get("/api/libraries")
 async def get_libraries(abs: AudiobookshelfClient = Depends(AudiobookshelfDeps)):
     """Get all libraries from audiobookshelf"""
+    import logging
+
+    logger = logging.getLogger("librarian")
     try:
-        return await abs.get_libraries()
+        logger.info(
+            f"ABS URL: {abs.base_url}, Token: {abs.api_token[:10] if abs.api_token else 'empty'}..."
+        )
+        result = await abs.get_libraries()
+        logger.info(f"Libraries result: {result}")
+        return result
     except Exception as e:
+        logger.error(f"Error fetching libraries: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -217,6 +226,39 @@ async def get_config():
         "abs_url": settings.abs_url,
         "jackett_url": settings.jackett_url,
         "transmission_url": settings.transmission_url,
+        "selected_library_id": settings.selected_library_id,
+    }
+
+
+class ConfigUpdate(BaseModel):
+    abs_url: Optional[str] = None
+    jackett_url: Optional[str] = None
+    transmission_url: Optional[str] = None
+    selected_library_id: Optional[str] = None
+
+
+@router.post("/api/config")
+async def update_config(config: ConfigUpdate):
+    """Update configuration"""
+    import os
+    from ..config import get_settings
+
+    if config.abs_url:
+        os.environ["LIBRARIAN_ABS_URL"] = config.abs_url
+    if config.jackett_url:
+        os.environ["LIBRARIAN_JACKETT_URL"] = config.jackett_url
+    if config.transmission_url:
+        os.environ["LIBRARIAN_TRANSMISSION_URL"] = config.transmission_url
+    if config.selected_library_id:
+        os.environ["LIBRARIAN_SELECTED_LIBRARY_ID"] = config.selected_library_id
+
+    get_settings.cache_clear()
+    settings = get_settings()
+    return {
+        "abs_url": settings.abs_url,
+        "jackett_url": settings.jackett_url,
+        "transmission_url": settings.transmission_url,
+        "selected_library_id": settings.selected_library_id,
     }
 
 

@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Audiobookshelf settings
     abs_url: str = "http://localhost:13378"
     abs_api_token: str = ""
+    selected_library_id: str = ""
 
     # Jackett settings
     jackett_url: str = "http://localhost:9117"
