@@ -5,7 +5,7 @@ WORKDIR /app/backend
 RUN pip install --no-cache-dir uv
 
 COPY backend/pyproject.toml .
-RUN uv sync --frozen --no-dev
+RUN uv sync
 
 COPY backend/app/ ./app/
 
@@ -13,8 +13,8 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
-COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci
+COPY frontend/package.json frontend/package*.json ./
+RUN npm install
 
 COPY frontend/ .
 
@@ -35,7 +35,7 @@ COPY --from=frontend-builder /app/frontend /app/frontend
 WORKDIR /app/backend
 
 RUN pip install --no-cache-dir uv && \
-    uv sync --frozen --no-dev
+    pip install --no-cache-dir uvicorn fastapi pydantic pydantic-settings httpx python-dotenv
 
 EXPOSE 8000
 
