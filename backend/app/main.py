@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
 
 from .api.main import router as api_router
 from .config import get_settings
@@ -18,12 +21,20 @@ app.add_middleware(
 
 app.include_router(api_router)
 
+FRONTEND_PATH = "/app/frontend/.next"
+
 
 @app.get("/")
 async def root():
-    return {"message": "Librarian API", "version": "0.1.0"}
+    return FileResponse(f"{FRONTEND_PATH}/out/index.html")
 
 
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+if os.path.exists(f"{FRONTEND_PATH}/out"):
+    app.mount(
+        "/_next", StaticFiles(directory=f"{FRONTEND_PATH}/out/_next"), name="static"
+    )

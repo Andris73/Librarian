@@ -30,15 +30,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=backend-builder /app/backend /app/backend
-COPY --from=frontend-builder /app/frontend /app/frontend
+COPY --from=frontend-builder /app/frontend/out /app/frontend/out
 
-WORKDIR /app/backend
-
-RUN pip install --no-cache-dir uv && \
-    pip install --no-cache-dir uvicorn fastapi pydantic pydantic-settings httpx python-dotenv
-
-EXPOSE 8000
+RUN pip install --no-cache-dir uvicorn fastapi pydantic pydantic-settings httpx python-dotenv
 
 ENV PYTHONPATH=/app/backend
+
+EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
