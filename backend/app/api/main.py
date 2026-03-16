@@ -218,3 +218,108 @@ async def get_config():
         "jackett_url": settings.jackett_url,
         "transmission_url": settings.transmission_url,
     }
+
+
+@router.get("/api/test/abs")
+async def test_abs():
+    """Test connection to Audiobookshelf"""
+    import httpx
+    from ..config import get_settings
+    import logging
+
+    settings = get_settings()
+    logger = logging.getLogger("librarian")
+    logger.info(f"Testing ABS connection to: {settings.abs_url}")
+
+    if not settings.abs_api_token:
+        return {"status": "error", "message": "No API token configured"}
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                f"{settings.abs_url}/api/libraries",
+                headers={"Authorization": f"Bearer {settings.abs_api_token}"},
+            )
+            if response.status_code == 200:
+                return {
+                    "status": "success",
+                    "message": "Connected to Audiobookshelf",
+                    "data": response.json(),
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": f"HTTP {response.status_code}",
+                    "detail": response.text,
+                }
+    except Exception as e:
+        logger.error(f"ABS connection error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.get("/api/test/jackett")
+async def test_jackett():
+    """Test connection to Jackett"""
+    import httpx
+    from ..config import get_settings
+    import logging
+
+    settings = get_settings()
+    logger = logging.getLogger("librarian")
+    logger.info(f"Testing Jackett connection to: {settings.jackett_url}")
+
+    if not settings.jackett_api_key:
+        return {"status": "error", "message": "No API key configured"}
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                f"{settings.jackett_url}/api/v2.0/indexers",
+                params={"apikey": settings.jackett_api_key},
+            )
+            if response.status_code == 200:
+                return {"status": "success", "message": "Connected to Jackett"}
+            else:
+                return {
+                    "status": "error",
+                    "message": f"HTTP {response.status_code}",
+                    "detail": response.text,
+                }
+    except Exception as e:
+        logger.error(f"Jackett connection error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.get("/api/test/transmission")
+async def test_transmission():
+    """Test connection to Transmission"""
+    import httpx
+    import base64
+    from ..config import get_settings
+    import logging
+
+    settings = get_settings()
+    logger = logging.getLogger("librarian")
+    logger.info(f"Testing Transmission connection to: {settings.transmission_url}")
+
+    try:
+        auth = base64.b64encode(
+            f"{settings.transmission_username}:{settings.transmission_password}".encode()
+        ).decode()
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"{settings.transmission_url}/transmission/rpc",
+                headers={"Authorization": f"Basic {auth}"},
+                json={"method": "session-get"},
+            )
+            if response.status_code == 200:
+                return {"status": "success", "message": "Connected to Transmission"}
+            else:
+                return {
+                    "status": "error",
+                    "message": f"HTTP {response.status_code}",
+                    "detail": response.text,
+                }
+    except Exception as e:
+        logger.error(f"Transmission connection error: {e}")
+        return {"status": "error", "message": str(e)}

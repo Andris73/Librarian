@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Server, Download, Search } from "lucide-react";
+import { Save, Server, Download, Search, Wifi, WifiOff } from "lucide-react";
 
 interface Config {
   abs_url: string;
   jackett_url: string;
   transmission_url: string;
+}
+
+interface TestResult {
+  status: string;
+  message: string;
 }
 
 export default function SettingsPage() {
@@ -18,6 +23,12 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [testingAbs, setTestingAbs] = useState(false);
+  const [testingJackett, setTestingJackett] = useState(false);
+  const [testingTransmission, setTestingTransmission] = useState(false);
+  const [absResult, setAbsResult] = useState<TestResult | null>(null);
+  const [jackettResult, setJackettResult] = useState<TestResult | null>(null);
+  const [transmissionResult, setTransmissionResult] = useState<TestResult | null>(null);
 
   useEffect(() => {
     fetchConfig();
@@ -52,6 +63,48 @@ export default function SettingsPage() {
     }
   };
 
+  const testAbs = async () => {
+    setTestingAbs(true);
+    setAbsResult(null);
+    try {
+      const res = await fetch("/api/test/abs");
+      const data = await res.json();
+      setAbsResult(data);
+    } catch (error) {
+      setAbsResult({ status: "error", message: String(error) });
+    } finally {
+      setTestingAbs(false);
+    }
+  };
+
+  const testJackett = async () => {
+    setTestingJackett(true);
+    setJackettResult(null);
+    try {
+      const res = await fetch("/api/test/jackett");
+      const data = await res.json();
+      setJackettResult(data);
+    } catch (error) {
+      setJackettResult({ status: "error", message: String(error) });
+    } finally {
+      setTestingJackett(false);
+    }
+  };
+
+  const testTransmission = async () => {
+    setTestingTransmission(true);
+    setTransmissionResult(null);
+    try {
+      const res = await fetch("/api/test/transmission");
+      const data = await res.json();
+      setTransmissionResult(data);
+    } catch (error) {
+      setTransmissionResult({ status: "error", message: String(error) });
+    } finally {
+      setTestingTransmission(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -69,7 +122,30 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 mb-4">
             <Server className="w-5 h-5 text-primary-400" />
             <h3 className="text-lg font-semibold">Audiobookshelf</h3>
+            <button
+              onClick={testAbs}
+              disabled={testingAbs}
+              className="ml-auto flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              {testingAbs ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : absResult?.status === "success" ? (
+                <Wifi className="w-4 h-4 text-green-400" />
+              ) : absResult?.status === "error" ? (
+                <WifiOff className="w-4 h-4 text-red-400" />
+              ) : (
+                <Wifi className="w-4 h-4" />
+              )}
+              Test
+            </button>
           </div>
+          {absResult && (
+            <div className={`mb-4 p-3 rounded-lg text-sm ${
+              absResult.status === "success" ? "bg-green-900/50 text-green-400" : "bg-red-900/50 text-red-400"
+            }`}>
+              {absResult.message}
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">URL</label>
@@ -99,7 +175,30 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 mb-4">
             <Search className="w-5 h-5 text-primary-400" />
             <h3 className="text-lg font-semibold">Jackett</h3>
+            <button
+              onClick={testJackett}
+              disabled={testingJackett}
+              className="ml-auto flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              {testingJackett ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : jackettResult?.status === "success" ? (
+                <Wifi className="w-4 h-4 text-green-400" />
+              ) : jackettResult?.status === "error" ? (
+                <WifiOff className="w-4 h-4 text-red-400" />
+              ) : (
+                <Wifi className="w-4 h-4" />
+              )}
+              Test
+            </button>
           </div>
+          {jackettResult && (
+            <div className={`mb-4 p-3 rounded-lg text-sm ${
+              jackettResult.status === "success" ? "bg-green-900/50 text-green-400" : "bg-red-900/50 text-red-400"
+            }`}>
+              {jackettResult.message}
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">URL</label>
@@ -126,7 +225,30 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 mb-4">
             <Download className="w-5 h-5 text-primary-400" />
             <h3 className="text-lg font-semibold">Transmission</h3>
+            <button
+              onClick={testTransmission}
+              disabled={testingTransmission}
+              className="ml-auto flex items-center gap-2 px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              {testingTransmission ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : transmissionResult?.status === "success" ? (
+                <Wifi className="w-4 h-4 text-green-400" />
+              ) : transmissionResult?.status === "error" ? (
+                <WifiOff className="w-4 h-4 text-red-400" />
+              ) : (
+                <Wifi className="w-4 h-4" />
+              )}
+              Test
+            </button>
           </div>
+          {transmissionResult && (
+            <div className={`mb-4 p-3 rounded-lg text-sm ${
+              transmissionResult.status === "success" ? "bg-green-900/50 text-green-400" : "bg-red-900/50 text-red-400"
+            }`}>
+              {transmissionResult.message}
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">URL</label>

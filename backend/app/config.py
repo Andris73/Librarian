@@ -10,15 +10,15 @@ class Settings(BaseSettings):
     config_dir: str = "/config"
 
     # Audiobookshelf settings
-    abs_url: str = "http://audiobookshelf:80"
+    abs_url: str = "http://localhost:13378"
     abs_api_token: str = ""
 
     # Jackett settings
-    jackett_url: str = "http://jackett:9117"
+    jackett_url: str = "http://localhost:9117"
     jackett_api_key: str = ""
 
     # Transmission settings
-    transmission_url: str = "http://transmission:9091"
+    transmission_url: str = "http://localhost:9091"
     transmission_username: str = "admin"
     transmission_password: str = "admin"
 
