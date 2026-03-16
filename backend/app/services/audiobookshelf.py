@@ -27,10 +27,18 @@ class AudiobookshelfClient:
     ) -> dict:
         response = await self.client.get(
             f"/api/libraries/{library_id}/items",
-            params={"limit": limit, "offset": offset},
+            params={"limit": limit, "offset": offset, "minified": 0},
         )
         response.raise_for_status()
         return response.json()
+
+    async def get_library_item(self, item_id: str) -> dict:
+        response = await self.client.get(f"/api/items/{item_id}")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_cover_url(self, item_id: str) -> str:
+        return f"{self.base_url}/api/items/{item_id}/cover"
 
     async def get_book(self, book_id: str) -> dict:
         response = await self.client.get(f"/api/books/{book_id}")

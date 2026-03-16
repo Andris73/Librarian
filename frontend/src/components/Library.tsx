@@ -16,6 +16,37 @@ interface Book {
   isComplete?: boolean;
 }
 
+interface ABSLibraryItem {
+  id: string;
+  media: {
+    metadata: {
+      title: string;
+      authorName?: string;
+      narratorName?: string;
+      description?: string;
+    };
+    duration?: number;
+  };
+  mediaProgress?: {
+    progress: number;
+    isComplete: boolean;
+  };
+}
+
+function parseBookFromABS(item: ABSLibraryItem): Book {
+  return {
+    id: item.id,
+    title: item.media.metadata.title || "Unknown Title",
+    authorName: item.media.metadata.authorName,
+    narratorName: item.media.metadata.narratorName,
+    description: item.media.metadata.description,
+    coverUrl: `/api/abs/items/${item.id}/cover`,
+    duration: item.media.duration,
+    progress: item.mediaProgress?.progress,
+    isComplete: item.mediaProgress?.isComplete,
+  };
+}
+
 interface Library {
   id: string;
   name: string;
@@ -60,7 +91,8 @@ export default function Library() {
       const res = await fetch(`/api/libraries/${libraryId}/books`);
       const data = await res.json();
       console.log("Books response:", data);
-      setBooks(data.result || data.book || []);
+      const items = data.results || data.result || [];
+      setBooks(items.map((item: ABSLibraryItem) => parseBookFromABS(item)));
     } catch (error) {
       console.error("Failed to fetch books:", error);
     }

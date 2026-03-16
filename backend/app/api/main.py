@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from typing import Optional
 from pydantic import BaseModel
 
@@ -144,6 +145,40 @@ async def get_book(book_id: str):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         await client.close()
+
+
+@router.get("/api/abs/items/{item_id}/cover")
+async def get_item_cover(item_id: str):
+    """Get cover image for a library item"""
+    import logging
+    import httpx
+
+    logger = logging.getLogger("librarian")
+    from ..config import get_settings
+
+    settings = get_settings()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                f"{settings.abs_url}/api/items/{item_id}/cover",
+                headers={"Authorization": f"Bearer {settings.abs_api_token}"},
+                follow_redirects=True,
+            )
+            if response.status_code == 200:
+                return StreamingResponse(
+                    response.content,
+                    media_type="image/jpeg",
+                    headers={"Cache-Control": "public, max-age=3600"},
+                )
+            elif response.status_code == 404:
+                raise HTTPException(status_code=404, detail="Cover not found")
+            else:
+                raise HTTPException(
+                    status_code=response.status_code, detail="Failed to fetch cover"
+                )
+    except Exception as e:
+        logger.error(f"Error fetching cover: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/books/{book_id}/stream/{chapter_id}")
