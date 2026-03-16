@@ -1,0 +1,31 @@
+version: "3.8"
+
+# This compose file connects to your EXISTING mediastack services
+# No need to recreate audiobookshelf, transmission, or jackett
+# Just run: docker-compose -f docker-compose.librarian.yml up -d
+
+services:
+  librarian:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: librarian:latest
+    container_name: librarian
+    ports:
+      - 3000:3000
+    volumes:
+      - ./config:/config
+    environment:
+      - PUID=1000
+      - PGID=1001
+      - TZ=Europe/London
+      - LIBRARIAN_ABS_URL=http://host.docker.internal:13378
+      - LIBRARIAN_ABS_API_TOKEN=${ABS_API_TOKEN}
+      - LIBRARIAN_JACKETT_URL=http://host.docker.internal:9117
+      - LIBRARIAN_JACKETT_API_KEY=${JACKETT_API_KEY}
+      - LIBRARIAN_TRANSMISSION_URL=http://host.docker.internal:9091
+      - LIBRARIAN_TRANSMISSION_USERNAME=admin
+      - LIBRARIAN_TRANSMISSION_PASSWORD=admin
+      - LIBRARIAN_DOWNLOAD_PATH=/data/audiobooks
+    restart: unless-stopped
+    network_mode: host

@@ -1,0 +1,122 @@
+version: "3.8"
+
+networks:
+  media:
+    driver: bridge
+
+services:
+  librarian:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: librarian
+    networks:
+      - media
+    ports:
+      - 3000:3000
+    volumes:
+      - /mnt/disk1/appdata/librarian:/config
+    environment:
+      - PUID=1000
+      - PGID=1001
+      - TZ=Europe/London
+      - LIBRARIAN_ABS_URL=http://audiobookshelf:80
+      - LIBRARIAN_ABS_API_TOKEN=${ABS_API_TOKEN}
+      - LIBRARIAN_JACKETT_URL=http://jackett:9117
+      - LIBRARIAN_JACKETT_API_KEY=${JACKETT_API_KEY}
+      - LIBRARIAN_TRANSMISSION_URL=http://transmission:9091
+      - LIBRARIAN_TRANSMISSION_USERNAME=admin
+      - LIBRARIAN_TRANSMISSION_PASSWORD=admin
+      - LIBRARIAN_DOWNLOAD_PATH=/data/audiobooks
+    restart: unless-stopped
+    # depends_on:
+    #   audiobookshelf:
+    #     condition: service_healthy
+    #   jackett:
+    #     condition: service_healthy
+    #   transmission:
+    #     condition: service_healthy
+
+  # audiobookshelf:
+  #   image: ghcr.io/advplyr/audiobookshelf:latest
+  #   container_name: audiobookshelf
+  #   networks:
+  #     - media
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1001
+  #     - TZ=Europe/London
+  #   ports:
+  #     - 13378:80
+  #   volumes:
+  #     - /mnt/disk1/downloads/audiobooks:/audiobooks
+  #     - /mnt/disk1/downloads/incomplete:/WIP
+  #     - /mnt:/mnt
+  #     - /home/morgan/tts:/tts
+  #     - /mnt/disk1/appdata/audiobookshelf/config:/config
+  #     - /mnt/disk1/appdata/audiobookshelf/metadata:/metadata
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # transmission:
+  #   image: haugene/transmission-openvpn
+  #   container_name: transmission
+  #   networks:
+  #     - media
+  #   ports:
+  #     - 9091:9091
+  #   cap_add:
+  #     - NET_ADMIN
+  #   sysctls:
+  #     - net.ipv6.conf.all.disable_ipv6=0
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1001
+  #     - TZ=Europe/London
+  #     - UMASK=002
+  #     - USER=admin
+  #     - PASS=admin
+  #     - OPENVPN_USERNAME=${OPENVPN_USERNAME}
+  #     - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+  #     - OPENVPN_CONFIG=france
+  #     - OPENVPN_PROVIDER=PIA
+  #     - LOCAL_NETWORK=192.168.0.0/16,172.16.0.0/12,100.64.0.0/10
+  #     - TRANSMISSION_RPC_BIND_ADDRESS=0.0.0.0
+  #     - TRANSMISSION_RPC_HOST_WHITELIST_ENABLED=false
+  #     - TRANSMISSION_RPC_WHITELIST_ENABLED=false
+  #   volumes:
+  #     - /mnt/disk1/appdata/transmission:/config
+  #     - /mnt:/mnt
+  #     - /mnt/disk1/downloads:/data
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:9091 || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # jackett:
+  #   image: lscr.io/linuxserver/jackett:latest
+  #   container_name: jackett
+  #   networks:
+  #     - media
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ=Etc/UTC
+  #     - AUTO_UPDATE=true
+  #   volumes:
+  #     - /mnt/disk1/appdata/jackett:/config
+  #     - /mnt/disk1/downloads/audiobooks:/downloads
+  #   ports:
+  #     - 9117:9117
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:9117 || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
