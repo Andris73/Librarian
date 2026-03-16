@@ -10,6 +10,7 @@ class TransmissionClient:
         self.base_url = self.settings.transmission_url
         self.username = self.settings.transmission_username
         self.password = self.settings.transmission_password
+        self.session_id: Optional[str] = None
 
         auth = base64.b64encode(f"{self.username}:{self.password}".encode()).decode()
         self.client = httpx.AsyncClient(
@@ -26,7 +27,23 @@ class TransmissionClient:
 
     async def _rpc(self, method: str, arguments: dict = None) -> dict:
         payload = {"method": method, "arguments": arguments or {}}
-        response = await self.client.post("/transmission/rpc", json=payload)
+
+        headers = {}
+        if self.session_id:
+            headers["X-Transmission-Session-Id"] = self.session_id
+
+        response = await self.client.post(
+            "/transmission/rpc", json=payload, headers=headers
+        )
+
+        if response.status_code == 409:
+            self.session_id = response.headers.get("X-Transmission-Session-Id")
+            if self.session_id:
+                headers["X-Transmission-Session-Id"] = self.session_id
+                response = await self.client.post(
+                    "/transmission/rpc", json=payload, headers=headers
+                )
+
         response.raise_for_status()
         return response.json()
 

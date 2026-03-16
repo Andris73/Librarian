@@ -449,18 +449,23 @@ async def test_jackett():
         return {"status": "error", "message": "No API key configured"}
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
             response = await client.get(
                 f"{settings.jackett_url}/api/v2.0/indexers",
-                params={"apikey": settings.jackett_api_key},
+                headers={"X-Api-Key": settings.jackett_api_key},
             )
             if response.status_code == 200:
                 return {"status": "success", "message": "Connected to Jackett"}
+            elif response.status_code == 302:
+                return {
+                    "status": "error",
+                    "message": "Invalid API key - redirected to login",
+                }
             else:
                 return {
                     "status": "error",
                     "message": f"HTTP {response.status_code}",
-                    "detail": response.text,
+                    "detail": response.text[:200],
                 }
     except Exception as e:
         logger.error(f"Jackett connection error: {e}")
@@ -483,19 +488,39 @@ async def test_transmission():
         auth = base64.b64encode(
             f"{settings.transmission_username}:{settings.transmission_password}".encode()
         ).decode()
+
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(
                 f"{settings.transmission_url}/transmission/rpc",
                 headers={"Authorization": f"Basic {auth}"},
                 json={"method": "session-get"},
             )
+
             if response.status_code == 200:
                 return {"status": "success", "message": "Connected to Transmission"}
+            elif response.status_code == 409:
+                session_id = response.headers.get("X-Transmission-Session-Id")
+                if session_id:
+                    response = await client.post(
+                        f"{settings.transmission_url}/transmission/rpc",
+                        headers={
+                            "Authorization": f"Basic {auth}",
+                            "X-Transmission-Session-Id": session_id,
+                        },
+                        json={"method": "session-get"},
+                    )
+                    if response.status_code == 200:
+                        return {
+                            "status": "success",
+                            "message": "Connected to Transmission",
+                        }
+
+                return {"status": "error", "message": "Failed to get valid session"}
             else:
                 return {
                     "status": "error",
                     "message": f"HTTP {response.status_code}",
-                    "detail": response.text,
+                    "detail": response.text[:200],
                 }
     except Exception as e:
         logger.error(f"Transmission connection error: {e}")
